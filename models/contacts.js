@@ -1,53 +1,43 @@
-const fs = require("fs/promises");
-const path = require("path");
-const { nanoid } = require("nanoid");
-
-const contactsPath = path.join(__dirname, "contacts.json");
+const { Contact } = require("../models/contact");
 
 async function listContacts() {
-  const data = await fs.readFile(contactsPath);
-  return JSON.parse(data);
+  const data = await Contact.find();
+  return data;
 }
 
 async function getContactById(contactId) {
-  const contacts = await listContacts();
-  const result = contacts.find((contact) => contact.id === contactId);
+  const result = await Contact.findById(contactId);
   return result || null;
 }
 
 async function removeContact(contactId) {
-  const contacts = await listContacts();
-  const index = contacts.findIndex((contact) => contact.id === contactId);
-  if (index === -1) {
-    return null;
-  }
-  const [result] = contacts.splice(index, 1);
-  await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
+  const result = await Contact.deleteOne({ _id: contactId });
   return result;
 }
 
-async function addContact({ name, email, phone }) {
-  const contacts = await listContacts();
+async function addContact({ name, email, phone, favorite }) {
   const newContact = {
-    id: nanoid(),
     name,
     email,
     phone,
+    favorite,
   };
-  contacts.push(newContact);
-  await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
+  await Contact.create(newContact);
   return newContact;
 }
 
 const updateContact = async (contactId, body) => {
-  const contacts = await listContacts();
-  const index = contacts.findIndex((contact) => contact.id === contactId);
-  if (index === -1) {
-    return null;
-  }
-  contacts[index] = { contactId, ...body };
-  await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
-  return contacts[index];
+  const result = await Contact.findByIdAndUpdate(contactId, body, {
+    new: true,
+  });
+  return result;
+};
+
+const updateStatusContact = async (contactId, body) => {
+  const result = await Contact.findByIdAndUpdate(contactId, body, {
+    new: true,
+  });
+  return result;
 };
 
 module.exports = {
@@ -56,4 +46,5 @@ module.exports = {
   removeContact,
   addContact,
   updateContact,
+  updateStatusContact,
 };
