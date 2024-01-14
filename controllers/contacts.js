@@ -2,7 +2,15 @@ const { Contact, schemas } = require("../models/contact");
 const { HttpError, ctrlWrapper } = require("../helpers");
 
 const listContacts = async (req, res) => {
-  const result = await Contact.find();
+  const { _id: owner } = req.user;
+  const { favorite } = req.query;
+  if (favorite) {
+    const result = await Contact.find({ owner, favorite });
+    res.json(result);
+  }
+  const { page = 1, limit = 10 } = req.query;
+  const skip = (page - 1) * limit;
+  const result = await Contact.find({ owner }, "", { skip, limit });
   res.json(result);
 };
 
@@ -34,7 +42,8 @@ const addContact = async (req, res) => {
       .join("");
     throw HttpError(400, `Missing required ${errorPath} field`);
   }
-  const result = await Contact.create(req.body);
+  const { _id: owner } = req.user;
+  const result = await Contact.create({ ...req.body, owner });
   res.status(201).json(result);
 };
 
